@@ -2,6 +2,10 @@ const { app, BrowserWindow } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 
+// Debug logging for auto-updater
+autoUpdater.logger = require("electron-log");
+autoUpdater.logger.transports.file.level = "debug";
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
