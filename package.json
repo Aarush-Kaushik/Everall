@@ -1,6 +1,6 @@
 {
   "name": "everall",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Everall productivity app",
   "main": "main.js",
   "scripts": {

@@ -77,7 +77,7 @@ const NAV = [
   { id: 'games',        label: 'Games',         icon: '🎮' },
   { section: 'Tools' },
   { id: 'utilities',    label: 'Utilities',     icon: '🔧' },
-  { section: 'System' },
+  { section: 'Misc' },
   { id: 'settings',     label: 'Settings',      icon: '⚙️' },
 ];
 
