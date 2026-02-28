@@ -1,6 +1,6 @@
 {
   "name": "everall",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Everall productivity app",
   "main": "main.js",
   "scripts": {
@@ -31,6 +31,7 @@
     "electron-builder": "^24.0.0"
   },
   "dependencies": {
+    "electron-log": "^5.4.3",
     "electron-updater": "^6.0.0"
   }
 }

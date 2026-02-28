@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 
@@ -27,11 +27,26 @@ app.whenReady().then(() => {
 
 autoUpdater.on('update-available', () => {
   console.log('Update available.');
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Update Available',
+    message: '📦 A new version of Everall is available!',
+    detail: 'The update will be downloaded and installed automatically.',
+    buttons: ['OK']
+  });
 });
 
 autoUpdater.on('update-downloaded', () => {
   console.log('Update downloaded. Restarting...');
-  autoUpdater.quitAndInstall();
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Update Ready',
+    message: '✅ Update downloaded and ready to install!',
+    detail: 'The app will restart now to apply the update.',
+    buttons: ['OK']
+  }).then(() => {
+    autoUpdater.quitAndInstall();
+  });
 });
 
 app.on('window-all-closed', () => {
