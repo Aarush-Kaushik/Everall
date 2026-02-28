@@ -1,6 +1,6 @@
 {
   "name": "everall",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Everall productivity app",
   "main": "main.js",
   "scripts": {
@@ -14,15 +14,15 @@
     "forceCodeSigning": false,
 
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
 
     "publish": [
       {
         "provider": "github",
         "owner": "Aarush-Kaushik",
-        "repo": "Everall",
-        "vPrefixedTagName": true
+        "repo": "Everall"
       }
     ]
   },
