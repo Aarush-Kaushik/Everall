@@ -11,7 +11,7 @@
     "appId": "com.yourname.everall",
     "productName": "Everall",
     "win": {
-      "sign": false
+      "forceCodeSigning": false
     },
     "publish": [
       {
