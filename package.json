@@ -10,9 +10,13 @@
   "build": {
     "appId": "com.yourname.everall",
     "productName": "Everall",
+
+    "forceCodeSigning": false,
+
     "win": {
-      "forceCodeSigning": false
+      "target": "nsis"
     },
+
     "publish": [
       {
         "provider": "github",
