@@ -2316,7 +2316,7 @@ const SettingsModule = {
     return `
     <div class="module-header"><div><div class="module-title">⚙️ Settings</div></div></div>
     <div class="card">
-      <div class="card-title">Appearance</div>
+      <div class="card-title">Visuals</div>
       <div class="settings-row">
         <div><div class="settings-label">Dark Mode</div><div class="settings-desc">Use dark theme</div></div>
         <div class="toggle-switch ${s.theme!=='light'?'on':''}" onclick="SettingsModule.toggleTheme(this)"><div class="toggle-knob"></div></div>
