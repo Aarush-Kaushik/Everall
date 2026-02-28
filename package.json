@@ -10,6 +10,9 @@
   "build": {
     "appId": "com.yourname.everall",
     "productName": "Everall",
+    "win": {
+      "sign": false
+    },
     "publish": [
       {
         "provider": "github",
