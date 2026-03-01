@@ -10,6 +10,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: path.join(__dirname, 'icon.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -17,6 +18,15 @@ function createWindow() {
   });
 
   win.loadFile('index.html');
+  win.removeMenu();
+
+  // Handle F11 for fullscreen
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.key.toLowerCase() === 'f11') {
+      win.setFullScreen(!win.isFullScreen());
+      event.preventDefault();
+    }
+  });
 }
 
 app.whenReady().then(() => {
