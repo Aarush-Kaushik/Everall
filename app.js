@@ -2479,7 +2479,7 @@ const SettingsModule = {
     </div>
     <div class="card">
       <div class="card-title">About Everall</div>
-      <div class="settings-row"><div class="settings-label">Version</div><span class="font-mono text-accent">1.1.0</span></div>
+      <div class="settings-row"><div class="settings-label">Version</div><span class="font-mono text-accent">1.1.1</span></div>
       <div class="settings-row"><div class="settings-label">Storage Used</div><span id="storage-size" class="font-mono">${this.storageSize()}</span></div>
       <div class="settings-row"><div class="settings-label">Mode</div><span class="badge badge-green">Fully Offline</span></div>
     </div>`;
@@ -2559,7 +2559,7 @@ const AboutModule = {
     <div class="card">
       <div class="card-title">About the Developer</div>
       <p style="line-height: 1.8; color: var(--text2); margin-bottom: 8px;">
-        <strong>Developed by Aarush Kaushik</strong>
+        <strong>Developed by Pawaaru Solutions</strong>
       </p>
       <p style="line-height: 1.8; color: var(--text2); margin-bottom: 16px;">
         Everall combines functionality, modern design, and ease of use, giving you a truly unified experience that replaces juggling multiple programs with a single, powerful hub.
