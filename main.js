@@ -1,6 +1,11 @@
+const path = require('path');
+
+// ✅ 1) Force working directory to the installed app folder
+// Fixes ffmpeg.dll error during Windows startup
+process.chdir(path.dirname(process.execPath));
+
 const { app, BrowserWindow, dialog, ipcMain, clipboard, nativeImage } = require('electron');
 const { autoUpdater } = require('electron-updater');
-const path = require('path');
 const fs = require('fs');
 
 // Debug logging for auto-updater
@@ -24,7 +29,6 @@ function createWindow() {
   win.loadFile('index.html');
   win.removeMenu();
 
-  // Handle F11 for fullscreen
   win.webContents.on('before-input-event', (event, input) => {
     if (input.key.toLowerCase() === 'f11') {
       win.setFullScreen(!win.isFullScreen());
@@ -48,9 +52,12 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
 
-  autoUpdater.checkForUpdatesAndNotify();
+  // ✅ 2) Delay auto-updater by 5 seconds
+  // Prevents DLL/startup race condition on Windows login
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify();
+  }, 5000);
 
-  // IPC handlers for code editor file operations
   ipcMain.handle('open-file', async () => {
     const result = await dialog.showOpenDialog({ properties: ['openFile'] });
     if (result.canceled || !result.filePaths.length) return null;
@@ -116,11 +123,13 @@ app.whenReady().then(() => {
   ipcMain.handle('get-file-data', async (_, filePath) => {
     try {
       const data = fs.readFileSync(filePath);
-      const ext = path.extname(filePath).slice(1);
-      const mime = filePath.toLowerCase().endsWith('.mp3') ? 'audio/mpeg' : 
-                   filePath.toLowerCase().endsWith('.wav') ? 'audio/wav' :
-                   filePath.toLowerCase().endsWith('.mp4') ? 'video/mp4' :
-                   filePath.toLowerCase().endsWith('.webm') ? 'video/webm' : 'application/octet-stream';
+      const mime =
+        filePath.toLowerCase().endsWith('.mp3') ? 'audio/mpeg' :
+        filePath.toLowerCase().endsWith('.wav') ? 'audio/wav' :
+        filePath.toLowerCase().endsWith('.mp4') ? 'video/mp4' :
+        filePath.toLowerCase().endsWith('.webm') ? 'video/webm' :
+        'application/octet-stream';
+
       return `data:${mime};base64,${data.toString('base64')}`;
     } catch (e) {
       return null;
@@ -129,7 +138,6 @@ app.whenReady().then(() => {
 });
 
 autoUpdater.on('update-available', () => {
-  console.log('Update available.');
   dialog.showMessageBox({
     type: 'info',
     title: 'Update Available',
@@ -140,7 +148,6 @@ autoUpdater.on('update-available', () => {
 });
 
 autoUpdater.on('update-downloaded', () => {
-  console.log('Update downloaded. Restarting...');
   dialog.showMessageBox({
     type: 'info',
     title: 'Update Ready',
