@@ -1,6 +1,6 @@
 {
   "name": "everall",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Everall productivity app",
   "author": "Pawaaru Solutions",
   "main": "main.js",
@@ -12,6 +12,10 @@
     "appId": "com.yourname.everall",
     "productName": "Everall",
     "icon": "./icon.ico",
+    "asarUnpack": [
+      "**/node_modules/youtube-dl-exec/**",
+      "**/node_modules/ffmpeg-static/**"
+    ],
     "forceCodeSigning": false,
     "win": {
       "target": "nsis",

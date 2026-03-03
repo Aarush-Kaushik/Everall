@@ -1,7 +1,7 @@
 const path = require('path');
 const process = require('process');
 
-process.chdir(path.dirname(process.execPath));
+
 
 const { app, BrowserWindow, dialog, ipcMain, clipboard, nativeImage } = require('electron');
 const { autoUpdater } = require('electron-updater');
@@ -10,8 +10,10 @@ const os = require('os');
 
 const ffmpegStatic = require('ffmpeg-static');
 
+const log = require('electron-log');
+
 autoUpdater.logger = require("electron-log");
-autoUpdater.logger.transports.file.level = "debug";
+autoUpdater.logger.transports.file.level = "info";
 
 let isDirty = false;
 
@@ -144,17 +146,48 @@ app.whenReady().then(() => {
       await downloadYoutube(id, url, format, event, folder);
 
     } catch (err) {
-      console.error('YouTube Download Error:', err);
-      event.sender.send('youtube-error', {
-        id,
-        error: err.message || 'Download failed'
-      });
+        log.error("FULL ERROR:", err);
+        log.error("STDERR:", err.stderr);
+        log.error("MESSAGE:", err.message);
+
+        
+        // Also log to a file
+        const fs = require('fs');
+        const logPath = require('path').join(require('os').homedir(), 'Downloads', 'yt-error.log');
+        fs.appendFileSync(logPath, `\n[${new Date().toISOString()}] ${err.message}\n${err.stack}\n`);
+
+        throw err;
     }
   });
 
   async function downloadYoutube(id, url, format, event, downloadFolder) {
   try {
-    const youtubedl = require('youtube-dl-exec');
+    const path = require('path');
+    const youtubedlFactory = require('youtube-dl-exec');
+
+    const ytdlpPath = app.isPackaged
+      ? path.join(
+          process.resourcesPath,
+          'app.asar.unpacked',
+          'node_modules',
+          'youtube-dl-exec',
+          'bin',
+          'yt-dlp.exe'
+        )
+      : undefined;
+
+    const youtubedl = ytdlpPath
+      ? youtubedlFactory.create(ytdlpPath)
+      : youtubedlFactory;  
+
+    log.error("Using yt-dlp path: " + ytdlpPath);
+    if (ytdlpPath) {
+      log.error("Using yt-dlp path: " + ytdlpPath);
+      log.error("Exists: " + fs.existsSync(ytdlpPath));
+    } else {
+      log.error("Using default yt-dlp (dev mode)");
+    }
+
     const ffmpegStatic = require('ffmpeg-static');
 
     event.sender.send('youtube-progress', {
@@ -166,7 +199,9 @@ app.whenReady().then(() => {
     // Get video info to extract title
     let videoTitle = 'Downloaded';
     try {
-      const info = await youtubedl(url, { dumpSingleJson: true });
+      const info = await youtubedl(url, {
+        dumpSingleJson: true,
+      });
       videoTitle = info.title || 'Downloaded';
     } catch (e) {
       console.log('Could not fetch title, using default');
@@ -207,8 +242,10 @@ app.whenReady().then(() => {
     }, 1000);
 
   } catch (err) {
-    console.error('Download error:', err.message || err);
-    throw new Error(err.message || 'Download failed');
+    log.error("FULL ERROR:", err);
+    log.error("STDERR:", err.stderr);
+    log.error("MESSAGE:", err.message);
+    throw err;
   }
 }
 
