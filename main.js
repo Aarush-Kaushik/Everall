@@ -210,9 +210,11 @@ app.whenReady().then(() => {
     const filename = format === 'mp3' ? '%(title)s.%(ext)s' : '%(title)s.%(ext)s';
     const output = path.join(downloadFolder, filename);
     
+    const ffmpegPath = ffmpegStatic.replace('app.asar', 'app.asar.unpacked');
+
     const options = {
       output: output,
-      ffmpegLocation: ffmpegStatic,
+      ffmpegLocation: ffmpegPath,
     };
 
     if (format === 'mp3') {
