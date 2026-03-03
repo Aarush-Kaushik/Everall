@@ -9,4 +9,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeClipboardImage: (dataUrl) => ipcRenderer.invoke('write-clipboard-image', dataUrl),
   getFileData: (filePath) => ipcRenderer.invoke('get-file-data', filePath),
   setDirty: (value) => ipcRenderer.send('set-dirty', value),
+  
+  // YouTube Downloader IPC
+  youtubeDownload: (data) => ipcRenderer.send('youtube-download', data),
+  onYoutubeProgress: (callback) => ipcRenderer.on('youtube-progress', (_, data) => callback(data)),
+  onYoutubeComplete: (callback) => ipcRenderer.on('youtube-complete', (_, data) => callback(data)),
+  onYoutubeError: (callback) => ipcRenderer.on('youtube-error', (_, data) => callback(data)),
+  selectDownloadFolder: () => ipcRenderer.invoke('select-download-folder'),
 });

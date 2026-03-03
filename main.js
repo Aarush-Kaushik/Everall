@@ -1,14 +1,15 @@
 const path = require('path');
+const process = require('process');
 
-// ✅ 1) Force working directory to the installed app folder
-// Fixes ffmpeg.dll error during Windows startup
 process.chdir(path.dirname(process.execPath));
 
 const { app, BrowserWindow, dialog, ipcMain, clipboard, nativeImage } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const fs = require('fs');
+const os = require('os');
 
-// Debug logging for auto-updater
+const ffmpegStatic = require('ffmpeg-static');
+
 autoUpdater.logger = require("electron-log");
 autoUpdater.logger.transports.file.level = "debug";
 
@@ -52,8 +53,6 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
 
-  // ✅ 2) Delay auto-updater by 5 seconds
-  // Prevents DLL/startup race condition on Windows login
   setTimeout(() => {
     autoUpdater.checkForUpdatesAndNotify();
   }, 5000);
@@ -116,9 +115,102 @@ app.whenReady().then(() => {
     return true;
   });
 
+  ipcMain.handle('select-download-folder', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory']
+    });
+    if (result.canceled || !result.filePaths.length) return null;
+    return result.filePaths[0];
+  });
+
   ipcMain.on('set-dirty', (_, value) => {
     isDirty = value;
   });
+
+  const downloadFolder = path.join(os.homedir(), 'Downloads');
+
+  // YouTube Download Handler
+  ipcMain.on('youtube-download', async (event, data) => {
+    const { id, url, format, type, downloadLocation } = data;
+    const folder = downloadLocation || path.join(os.homedir(), 'Downloads');
+
+    try {
+      event.sender.send('youtube-progress', {
+        id,
+        progress: 10,
+        status: 'Fetching video info...'
+      });
+
+      await downloadYoutube(id, url, format, event, folder);
+
+    } catch (err) {
+      console.error('YouTube Download Error:', err);
+      event.sender.send('youtube-error', {
+        id,
+        error: err.message || 'Download failed'
+      });
+    }
+  });
+
+  async function downloadYoutube(id, url, format, event, downloadFolder) {
+  try {
+    const youtubedl = require('youtube-dl-exec');
+    const ffmpegStatic = require('ffmpeg-static');
+
+    event.sender.send('youtube-progress', {
+      id,
+      progress: 30,
+      status: 'Downloading video...'
+    });
+
+    // Get video info to extract title
+    let videoTitle = 'Downloaded';
+    try {
+      const info = await youtubedl(url, { dumpSingleJson: true });
+      videoTitle = info.title || 'Downloaded';
+    } catch (e) {
+      console.log('Could not fetch title, using default');
+    }
+
+    const filename = format === 'mp3' ? '%(title)s.%(ext)s' : '%(title)s.%(ext)s';
+    const output = path.join(downloadFolder, filename);
+    
+    const options = {
+      output: output,
+      ffmpegLocation: ffmpegStatic,
+    };
+
+    if (format === 'mp3') {
+      options.extractAudio = true;
+      options.audioFormat = 'mp3';
+      options.audioQuality = '192';
+    } else {
+      options.format = 'best[ext=mp4]';
+    }
+
+    console.log('Downloading:', url);
+    console.log('Options:', options);
+
+    await youtubedl(url, options);
+
+    event.sender.send('youtube-progress', {
+      id,
+      progress: 90,
+      status: 'Finalizing...'
+    });
+
+    setTimeout(() => {
+      event.sender.send('youtube-complete', {
+        id,
+        name: videoTitle
+      });
+    }, 1000);
+
+  } catch (err) {
+    console.error('Download error:', err.message || err);
+    throw new Error(err.message || 'Download failed');
+  }
+}
 
   ipcMain.handle('get-file-data', async (_, filePath) => {
     try {

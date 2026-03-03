@@ -77,13 +77,14 @@ const NAV = [
   { id: 'health',       label: 'Health',        icon: '💪', key: 'E' },
   { section: 'Fun' },
   { id: 'games',        label: 'Games',         icon: '🎮', key: 'X' },
-  { id: 'dailychallenge', label: 'Daily Challenge', icon: '🎁', key: 'P' },
+  { id: 'dailychallenge', label: 'Daily Challenge', icon: '🎁', key: '+' },
   { section: 'Media' },
   { id: 'music',        label: 'Music Player',  icon: '🎵', key: 'Q' },
   { id: 'video',        label: 'Video Player',  icon: '🎬', key: 'B' },
+  { id: 'youtubedownloader', label: 'YouTube Downloader', icon: '▼', key: '\\' },
   { id: 'maps',         label: 'Maps',          icon: '🗺️', key: 'O' },
   { section: 'People' },
-  { id: 'contacts',     label: 'Contacts',      icon: '👥', key: 'P' },
+  { id: 'contacts',     label: 'Contacts',      icon: '👥', key: '[' },
   { section: 'Tools' },
   { id: 'utilities',    label: 'Utilities',     icon: '🔧', key: 'U' },
   { id: 'clipboard',    label: 'Clipboard',     icon: '📋', key: 'J' },
@@ -3523,7 +3524,7 @@ const SettingsModule = {
     </div>
     <div class="card">
       <div class="card-title">About Everall</div>
-      <div class="settings-row"><div class="settings-label">Version</div><span class="font-mono text-accent">1.2.1</span></div>
+      <div class="settings-row"><div class="settings-label">Version</div><span class="font-mono text-accent">1.2.2</span></div>
       <div class="settings-row"><div class="settings-label">Storage Used</div><span id="storage-size" class="font-mono">${this.storageSize()}</span></div>
       <div class="settings-row"><div class="settings-label">Mode</div><span class="badge badge-green">Fully Offline</span></div>
     </div>`;
@@ -4109,6 +4110,231 @@ const WeeklyReviewModule = {
 };
 
 // ══════════════════════════════════════════════════
+// MODULE: YOUTUBE DOWNLOADER
+// ══════════════════════════════════════════════════
+const YoutubeDownloaderModule = {
+  downloadFormat: 'mp4',
+  downloadQueue: [],
+  downloadLocation: null,
+  listenersInitialized: false,
+  
+  render() {
+    const currentLocation = this.downloadLocation || 'Downloads (Default)';
+    
+    const queueHtml = this.downloadQueue.length > 0 ? `
+      <div class="card">
+        <div class="card-title">⏳ Download Queue</div>
+        <div class="item-list">
+          ${this.downloadQueue.map((item, i) => `
+            <div class="list-item" style="flex-direction: column; align-items: flex-start;">
+              <div style="font-weight: 600; margin-bottom: 4px;">${escHtml(item.name || 'Downloading...')}</div>
+              <div style="font-size: 12px; color: var(--text2); margin-bottom: 6px;">🎥 Video • ${item.format.toUpperCase()}</div>
+              <div style="width: 100%; background: var(--surface2); border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 4px;">
+                <div style="background: var(--accent); height: 100%; width: ${item.progress || 0}%; transition: width 0.3s;"></div>
+              </div>
+              <div style="font-size: 11px; color: var(--text2);">${item.status || 'Preparing...'}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    const historyHtml = Storage.load('yt_download_history', []).length > 0 ? `
+      <div class="card">
+        <div class="card-title">✅ Download History</div>
+        <div class="item-list">
+          ${Storage.load('yt_download_history', []).slice(-10).reverse().map((item, i) => `
+            <div class="list-item">
+              <div style="flex: 1;">
+                <div style="font-weight: 600;">${escHtml(item.name)}</div>
+                <div style="font-size: 12px; color: var(--text2); margin-top: 4px;">🎥 Video • ${item.format.toUpperCase()} • ${item.date}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    return `
+    <div class="module-header"><div><div class="module-title">▼ YouTube Downloader</div><div class="module-subtitle">Download YouTube videos</div></div></div>
+    
+    <div class="card">
+      <div class="card-title">⚙️ Download Settings</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Format</label>
+          <select id="yt-format" class="input" style="width: 100%;" onchange="YoutubeDownloaderModule.setFormat(this.value)">
+            <option value="mp4" ${this.downloadFormat === 'mp4' ? 'selected' : ''}>🎥 MP4 (Video)</option>
+            <option value="mp3" ${this.downloadFormat === 'mp3' ? 'selected' : ''}>🎵 MP3 (Audio)</option>
+          </select>
+          <div style="font-size: 11px; color: var(--text2); margin-top: 4px;">Selected format for all downloads</div>
+        </div>
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Download Location</label>
+          <div style="display: flex; gap: 8px;">
+            <div style="flex: 1; padding: 8px 12px; background: var(--surface2); border-radius: var(--radius-sm); border: 1px solid var(--border); font-size: 12px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${currentLocation}">${currentLocation}</div>
+            <button onclick="YoutubeDownloaderModule.selectFolder()" style="padding: 8px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-weight: 600;">📁</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📥 Download</div>
+      <input id="yt-url" type="text" class="input" placeholder="Paste YouTube URL here..." style="width: 100%; margin-bottom: 12px;">
+      <button class="btn btn-primary" onclick="YoutubeDownloaderModule.startDownload()" style="width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600;">⬇️ Download Video</button>
+      <div style="font-size: 12px; color: var(--text2); margin-top: 12px;">
+        ℹ️ Paste full YouTube video URL
+      </div>
+    </div>
+
+    ${queueHtml}
+    ${historyHtml}
+    `;
+  },
+
+  async selectFolder() {
+    if (!window.electronAPI) {
+      showToast('API not available', 'error');
+      return;
+    }
+    try {
+      const folderPath = await window.electronAPI.selectDownloadFolder();
+      if (folderPath) {
+        this.downloadLocation = folderPath;
+        Storage.save('yt_download_location', folderPath);
+        app.navigate('youtubedownloader');
+        showToast('Download location changed ✅', 'success');
+      }
+    } catch (err) {
+      showToast('Failed to select folder', 'error');
+      console.error('Folder selection error:', err);
+    }
+  },
+
+  setFormat(format) {
+    this.downloadFormat = format;
+    Storage.save('yt_download_format', format);
+    app.navigate('youtubedownloader');
+  },
+
+  startDownload() {
+    const url = document.getElementById('yt-url')?.value?.trim();
+    if (!url) {
+      showToast('Please paste a YouTube URL', 'error');
+      return;
+    }
+    
+    if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+      showToast('Please paste a valid YouTube URL', 'error');
+      return;
+    }
+
+    const queueItem = {
+      id: uid(),
+      name: 'Processing...',
+      format: this.downloadFormat,
+      url: url,
+      progress: 0,
+      status: 'Starting download...'
+    };
+
+    this.downloadQueue.push(queueItem);
+    app.navigate('youtubedownloader');
+
+    if (window.electronAPI && window.electronAPI.youtubeDownload) {
+      window.electronAPI.youtubeDownload({
+        id: queueItem.id,
+        url: url,
+        format: this.downloadFormat,
+        type: 'single',
+        downloadLocation: this.downloadLocation
+      });
+    } else {
+      showToast('IPC Error: YouTube download not available', 'error');
+      console.error('electronAPI not available');
+    }
+
+    document.getElementById('yt-url').value = '';
+  },
+
+  updateProgress(id, progress, status, name) {
+    const item = this.downloadQueue.find(i => i.id === id);
+    if (item) {
+      item.progress = Math.min(progress, 100);
+      item.status = status;
+      if (name) item.name = name;
+      app.navigate('youtubedownloader');
+    }
+  },
+
+  completeDownload(id, name) {
+    const item = this.downloadQueue.find(i => i.id === id);
+    if (item) {
+      item.progress = 100;
+      item.status = '✅ Completed';
+      item.name = name;
+
+      let history = Storage.load('yt_download_history', []);
+      history.push({
+        name: name,
+        format: item.format,
+        date: new Date().toLocaleDateString()
+      });
+      Storage.save('yt_download_history', history);
+
+      setTimeout(() => {
+        this.downloadQueue = this.downloadQueue.filter(i => i.id !== id);
+        app.navigate('youtubedownloader');
+      }, 3000);
+
+      showToast(`✅ Downloaded: ${name}`, 'success');
+    }
+  },
+
+  errorDownload(id, error) {
+    const item = this.downloadQueue.find(i => i.id === id);
+    if (item) {
+      item.status = `❌ Error: ${error}`;
+      item.progress = 0;
+      app.navigate('youtubedownloader');
+    }
+    showToast(`Download failed: ${error}`, 'error');
+  },
+
+  init() {
+    this.downloadFormat = Storage.load('yt_download_format', 'mp4');
+    this.downloadLocation = Storage.load('yt_download_location', null);
+    
+    if (this.listenersInitialized) return;
+    this.listenersInitialized = true;
+
+    if (!window.electronAPI) {
+      console.error('electronAPI not found in window');
+      return;
+    }
+
+    if (window.electronAPI.onYoutubeProgress) {
+      window.electronAPI.onYoutubeProgress((data) => {
+        YoutubeDownloaderModule.updateProgress(data.id, data.progress, data.status, data.name);
+      });
+    }
+
+    if (window.electronAPI.onYoutubeComplete) {
+      window.electronAPI.onYoutubeComplete((data) => {
+        YoutubeDownloaderModule.completeDownload(data.id, data.name);
+      });
+    }
+
+    if (window.electronAPI.onYoutubeError) {
+      window.electronAPI.onYoutubeError((data) => {
+        YoutubeDownloaderModule.errorDownload(data.id, data.error);
+      });
+    }
+  }
+};
+
+// ══════════════════════════════════════════════════
 // MODULE: KEYBINDS
 // ══════════════════════════════════════════════════
 const KeybindsModule = {
@@ -4175,6 +4401,7 @@ const Modules = {
   dailychallenge: DailyChallengeModule,
   music:      MusicPlayerModule,
   video:      VideoPlayerModule,
+  youtubedownloader: YoutubeDownloaderModule,
   contacts:   ContactsModule,
   analytics:  AnalyticsModule,
   utilities:   UtilitiesModule,
@@ -4224,4 +4451,5 @@ document.addEventListener('DOMContentLoaded', () => {
   window.showToast = showToast;
   window.closeModal = closeModal;
   window.openModal = openModal;
+  window.YoutubeDownloaderModule = YoutubeDownloaderModule;
 });
